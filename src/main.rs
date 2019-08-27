@@ -17,31 +17,7 @@ fn draw_bubble(text: &str) {
     println!("{}", last_line);
 }
 
-fn main() {
-    let matches = App::new("Calfsay")
-                    .arg(Arg::with_name("cow-file")
-                        .short("f")
-                        .takes_value(true))
-                    .arg(Arg::with_name("input")
-                        .multiple(true))
-                    .get_matches();
-
-    let desired_file = matches.value_of("cow-file").unwrap_or("default");
-    let text = matches.values_of("input").unwrap_or_default().collect::<Vec<_>>().join(" ");
-
-    let paths = fs::read_dir("/usr/share/cowsay/cows").unwrap();
-
-    let mut files = paths
-        .filter_map(Result::ok)
-        .filter(|path| path.file_type().unwrap().is_file());
-
-    let file = files.find(|file| file
-                                .path()
-                                .file_stem()
-                                .unwrap() == desired_file);
-
-    let contents = fs::read_to_string(file.unwrap().path()).unwrap();
-
+fn draw_cow_file(contents: &str) {
     let image = contents
                 .lines()
                 .filter(|line| !line.starts_with("##"))
@@ -56,6 +32,52 @@ fn main() {
                 .replace("\\\\", "\\")
                 .replace("\\@", "@");
 
-    draw_bubble(&text);
     println!("{}", image);
+}
+
+fn get_cow_file(filename: &str, folder_path: &str) -> Result<String, ()>{
+    let paths = fs::read_dir(folder_path).unwrap();
+
+    let mut files = paths
+        .filter_map(Result::ok)
+        .filter(|path| path.file_type().unwrap().is_file());
+
+    let file = files.find(|file| file
+                                .path()
+                                .file_stem()
+                                .unwrap_or_default() == filename);
+
+    if let Some(file) = file {
+        if let Ok(contents) = fs::read_to_string(file.path()) {
+            return Ok(contents)
+        }
+    }
+
+    Err(())
+}
+
+fn main() {
+    let matches = App::new("Calfsay")
+                    .arg(Arg::with_name("cow-file")
+                        .short("f")
+                        .takes_value(true))
+                    .arg(Arg::with_name("input")
+                        .multiple(true))
+                    .get_matches();
+
+    let desired_file = matches.value_of("cow-file").unwrap_or("default");
+    let text = matches.values_of("input").unwrap_or_default().collect::<Vec<_>>().join(" ");
+
+    let path = String::from("cows");
+    // let path = String::from("/usr/share/cowsay/cows");
+    
+    let cow_file_content = get_cow_file(desired_file, &path);
+
+    if let Ok(contents) = cow_file_content {
+        draw_bubble(&text);
+        draw_cow_file(&contents);
+    } else {
+        eprintln!("Couldn't find file {}", desired_file);
+    }
+
 }
