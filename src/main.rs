@@ -1,5 +1,5 @@
 use std::fs;
-
+use std::io;
 use clap::{Arg, App};
 
 /// Prints speech bubble for a given text
@@ -35,17 +35,18 @@ fn draw_cow_file(contents: &str) {
     println!("{}", image);
 }
 
-fn get_cow_file(filename: &str, folder_path: &str) -> Result<String, ()>{
-    let paths = fs::read_dir(folder_path).unwrap();
+fn get_cow_file(filename: &str, folder_path: &str) -> Result<String, io::Error>{
+    let paths = fs::read_dir(folder_path)?;
 
     let mut files = paths
         .filter_map(Result::ok)
-        .filter(|path| path.file_type().unwrap().is_file());
+        .filter(|path| path.file_type().map(|file_type| file_type.is_file()).unwrap_or(false));
 
     let file = files.find(|file| file
                                 .path()
                                 .file_stem()
                                 .unwrap_or_default() == filename);
+
 
     if let Some(file) = file {
         if let Ok(contents) = fs::read_to_string(file.path()) {
@@ -53,7 +54,7 @@ fn get_cow_file(filename: &str, folder_path: &str) -> Result<String, ()>{
         }
     }
 
-    Err(())
+    Err(io::Error::new(io::ErrorKind::NotFound, "File not found"))
 }
 
 fn main() {
