@@ -1,4 +1,5 @@
 use std::fs;
+use std::env;
 use std::io;
 use clap::{Arg, App};
 
@@ -58,6 +59,7 @@ fn get_cow_file(filename: &str, folder_path: &str) -> Result<String, io::Error>{
 }
 
 fn main() {
+
     let matches = App::new("Calfsay")
                     .arg(Arg::with_name("cow-file")
                         .short("f")
@@ -69,16 +71,17 @@ fn main() {
     let desired_file = matches.value_of("cow-file").unwrap_or("default");
     let text = matches.values_of("input").unwrap_or_default().collect::<Vec<_>>().join(" ");
 
-    let path = String::from("cows");
-    // let path = String::from("/usr/share/cowsay/cows");
+    let env_var = env::var("COWPATH").unwrap_or(String::from("/usr/share/cowsay/cows"));
+    let paths = env_var.split(":");
     
-    let cow_file_content = get_cow_file(desired_file, &path);
+    for path in paths {
+        let cow_file_content = get_cow_file(desired_file, &path);
 
-    if let Ok(contents) = cow_file_content {
-        draw_bubble(&text);
-        draw_cow_file(&contents);
-    } else {
-        eprintln!("Couldn't find file {}", desired_file);
+        if let Ok(contents) = cow_file_content {
+            draw_bubble(&text);
+            draw_cow_file(&contents);
+            return;
+        }
     }
-
+    eprintln!("Couldn't find file {}", desired_file);
 }
