@@ -71,7 +71,8 @@ fn main() {
     let desired_file = matches.value_of("cow-file").unwrap_or("default");
     let text = matches.values_of("input").unwrap_or_default().collect::<Vec<_>>().join(" ");
 
-    let env_var = env::var("COWPATH").unwrap_or(String::from("/usr/share/cowsay/cows"));
+    let env_var = env::var("COWPATH")
+        .unwrap_or(String::from("cows:/usr/share/cowsay/cows"));
     let paths = env_var.split(":");
     
     for path in paths {
