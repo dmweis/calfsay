@@ -2,6 +2,7 @@ use std::fs;
 use std::env;
 use std::io;
 use clap::{Arg, App};
+use std::io::Read;
 
 /// Prints speech bubble for a given text
 /// For now nat handling multiple lines
@@ -69,7 +70,17 @@ fn main() {
                     .get_matches();
 
     let desired_file = matches.value_of("cow-file").unwrap_or("default");
-    let text = matches.values_of("input").unwrap_or_default().collect::<Vec<_>>().join(" ");
+
+    
+    let text = match matches.values_of("input") {
+        Some(text) => text.collect::<Vec<_>>().join(" "),
+        None => {
+            let mut buffer = String::new();
+            io::stdin().read_to_string(&mut buffer).expect("I can only read utf-8");
+            buffer.trim().to_owned()
+        }
+    };
+
 
     let env_var = env::var("COWPATH")
         .unwrap_or(String::from("cows:/usr/share/cowsay/cows"));
