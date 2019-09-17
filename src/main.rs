@@ -93,13 +93,17 @@ fn main() {
     let matches = App::new("Calfsay")
                     .arg(Arg::with_name("cow-file")
                         .short("f")
+                        .help("selects custom cow file")
                         .takes_value(true))
                     .arg(Arg::with_name("no-builtin")
-                        .short("b"))
+                        .short("b")
+                        .help("skips built in cow files"))
                     .arg(Arg::with_name("print-cows")
-                        .short("a"))
+                        .short("a")
+                        .help("Prints out a list of all available cow files (both built in and installed)"))
                     .arg(Arg::with_name("input")
-                        .multiple(true))
+                        .multiple(true)
+                        .help("Text to be printed in text box"))
                     .get_matches();
 
     let desired_file = matches.value_of("cow-file").unwrap_or("default");
