@@ -35,7 +35,7 @@ fn draw_bubble(text: &str) {
 fn draw_cow_file(contents: &str) {
     let image = contents
                 .lines()
-                .filter(|line| !line.starts_with("##"))
+                .filter(|line| !line.starts_with("#"))
                 .filter(|line| !line.contains("EOC"))
                 .collect::<Vec<&str>>();
 
