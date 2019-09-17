@@ -3,6 +3,19 @@ use std::env;
 use std::io;
 use clap::{Arg, App};
 use std::io::Read;
+use std::str::from_utf8;
+use std::collections::HashMap;
+
+
+fn load_built_in_files() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    map.insert("alpaca".to_string(), from_utf8(include_bytes!("cows/alpaca.cow")).unwrap().to_string());
+    map.insert("default".to_string(), from_utf8(include_bytes!("cows/default.cow")).unwrap().to_string());
+    map.insert("dragon".to_string(), from_utf8(include_bytes!("cows/dragon.cow")).unwrap().to_string());
+    map.insert("tux".to_string(), from_utf8(include_bytes!("cows/tux.cow")).unwrap().to_string());
+    map.insert("vader".to_string(), from_utf8(include_bytes!("cows/vader.cow")).unwrap().to_string());
+    map
+}
 
 /// Prints speech bubble for a given text
 /// For now nat handling multiple lines
@@ -37,6 +50,22 @@ fn draw_cow_file(contents: &str) {
     println!("{}", image);
 }
 
+fn list_files(folder_path: &str) -> Result<(), io::Error> {
+    let paths = fs::read_dir(folder_path)?;
+
+    let files = paths
+        .filter_map(Result::ok)
+        .filter(|path| path.file_type().map(|file_type| file_type.is_file()).unwrap_or(false));
+
+    for file in files {
+        println!("   {:#?}", file
+                            .path()
+                            .file_stem()
+                            .unwrap_or_default());
+    }
+    Ok(())
+}
+
 fn get_cow_file(filename: &str, folder_path: &str) -> Result<String, io::Error>{
     let paths = fs::read_dir(folder_path)?;
 
@@ -65,12 +94,38 @@ fn main() {
                     .arg(Arg::with_name("cow-file")
                         .short("f")
                         .takes_value(true))
+                    .arg(Arg::with_name("no-builtin")
+                        .short("b"))
+                    .arg(Arg::with_name("print-cows")
+                        .short("a"))
                     .arg(Arg::with_name("input")
                         .multiple(true))
                     .get_matches();
 
     let desired_file = matches.value_of("cow-file").unwrap_or("default");
 
+    let no_builtin = matches.is_present("no-builtin");
+
+    let env_var = env::var("COWPATH")
+        .unwrap_or(String::from("cows:/usr/share/cowsay/cows"));
+    let paths = env_var.split(":");
+
+    if matches.is_present("print-cows") {
+        let built_in = load_built_in_files();
+        println!("Built in files");
+        for key in built_in.keys() {
+            println!("   {}", key);
+        }
+        println!("\nFiles");
+        for path in paths {
+            println!("{}", path);
+            if let Err(_) = list_files(&path) {
+                println!("   No files found in this location!");
+            }
+            println!("");
+        }
+        return;
+    }
     
     let text = match matches.values_of("input") {
         Some(text) => text.collect::<Vec<_>>().join(" "),
@@ -80,16 +135,23 @@ fn main() {
             buffer.trim().to_owned()
         }
     };
-
-
-    let env_var = env::var("COWPATH")
-        .unwrap_or(String::from("cows:/usr/share/cowsay/cows"));
-    let paths = env_var.split(":");
     
     for path in paths {
         let cow_file_content = get_cow_file(desired_file, &path);
 
         if let Ok(contents) = cow_file_content {
+            draw_bubble(&text);
+            draw_cow_file(&contents);
+            return;
+        }
+    }
+
+    if !no_builtin {
+        let built_in_files = load_built_in_files();
+
+        let contents = built_in_files.get(desired_file);
+
+        if let Some(contents) = contents {
             draw_bubble(&text);
             draw_cow_file(&contents);
             return;
